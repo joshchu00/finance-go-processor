@@ -1,0 +1,8 @@
+# environment: "dev", "test", "stg", "prod"
+environment: "prod"
+
+kafka:
+  bootstrap.servers: "192.168.33.10:39092"
+  topics: 
+    processor: "processor"
+    analyzer: "analyzer"
