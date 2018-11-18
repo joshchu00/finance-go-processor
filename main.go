@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -47,7 +49,7 @@ func init() {
 
 var environment string
 
-type Response struct {
+type response struct {
 	Data5 [][]string `json:"data5"`
 }
 
@@ -92,14 +94,17 @@ func process() {
 		}
 		fmt.Println(message)
 
-		// TODO: read file
-		// err = ioutil.WriteFile("temp", bytes, 0644)
-		// if err != nil {
-		//   return
-		// }
-		// // fmt.Println(time.Now())
+		var bytes []byte
+		if bytes, err = ioutil.ReadFile(message.Path); err != nil {
+			log.Panicln("PANIC", "ReadFile", err)
+		}
 
-		// TODO: parse json
+		res := &response{}
+		if err = json.Unmarshal(bytes, res); err != nil {
+			log.Panicln("PANIC", "Unmarshal", err)
+		}
+
+		// TODO: iterate response
 		// fmt.Println(result.Data5[0])
 
 		// TODO: insert into cassandra
