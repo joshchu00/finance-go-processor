@@ -1,17 +1,18 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/joshchu00/finance-go-common/cassandra"
+	"github.com/joshchu00/finance-go-common/datetime"
 	"github.com/joshchu00/finance-go-common/kafka"
 	"github.com/joshchu00/finance-protobuf"
+	"github.com/joshchu00/finance-go-processor/twse"
 	"github.com/spf13/viper"
 )
 
@@ -42,6 +43,8 @@ func init() {
 
 	// log config
 	log.Println("INFO", "environment:", viper.GetString("environment"))
+	log.Println("INFO", "cassandra.hosts:", viper.GetString("cassandra.hosts"))
+	log.Println("INFO", "cassandra.keyspace:", viper.GetString("cassandra.keyspace"))
 	log.Println("INFO", "kafka.bootstrap.servers:", viper.GetString("kafka.bootstrap.servers"))
 	log.Println("INFO", "kafka.topics.processor:", viper.GetString("kafka.topics.processor"))
 	log.Println("INFO", "kafka.topics.analyzer:", viper.GetString("kafka.topics.analyzer"))
@@ -49,9 +52,7 @@ func init() {
 
 var environment string
 
-type response struct {
-	Data5 [][]string `json:"data5"`
-}
+
 
 func process() {
 
@@ -65,9 +66,20 @@ func process() {
 
 	var err error
 
+	// cassandra keyspace
+	var cassandraKeyspace string
+	cassandraKeyspace = fmt.Sprintf("%s_%s", viper.GetString("cassandra.keyspace"), environment)
+
+	// cassandra client
+	var cassandraClient *cassandra.Client
+	if cassandraClient, err = cassandra.NewClient(viper.GetString("cassandra.hosts"), cassandraKeyspace); err != nil {
+		return
+	}
+	defer cassandraClient.Close()
+
 	// processor topic
 	var processorTopic string
-	processorTopic = fmt.Sprintf("%s-%s", viper.GetString("kafka.topics.processor"), environment)
+	processorTopic = fmt.Sprintf("%s_%s", viper.GetString("kafka.topics.processor"), environment)
 
 	// processor consumer
 	var processorConsumer *kafka.Consumer
@@ -75,6 +87,17 @@ func process() {
 		return
 	}
 	defer processorConsumer.Close()
+
+	// analyzer topic
+	var analyzerTopic string
+	analyzerTopic = fmt.Sprintf("%s_%s", viper.GetString("kafka.topics.analyzer"), environment)
+
+	// analyzer producer
+	var analyzerProducer *kafka.Producer
+	if analyzerProducer, err = kafka.NewProducer(viper.GetString("kafka.bootstrap.servers")); err != nil {
+		return
+	}
+	defer analyzerProducer.Close()
 
 	for {
 
@@ -92,24 +115,15 @@ func process() {
 		if err = proto.Unmarshal(value, message); err != nil {
 			log.Panicln("PANIC", "Unmarshal", err)
 		}
-		fmt.Println(message)
 
-		var bytes []byte
-		if bytes, err = ioutil.ReadFile(message.Path); err != nil {
-			log.Panicln("PANIC", "ReadFile", err)
+		switch message.Exchange {
+		case "TWSE":
+			if err = twse.Process(message.Period, datetime.GetTime(message.Datetime), message.Path, message.IsFinished, cassandraClient, analyzerProducer, analyzerTopic); err != nil {
+				log.Panicln("PANIC", "Process", err)
+			}
+		default:
+			log.Panicln("PANIC", "Unknown exchange")
 		}
-
-		res := &response{}
-		if err = json.Unmarshal(bytes, res); err != nil {
-			log.Panicln("PANIC", "Unmarshal", err)
-		}
-
-		// TODO: iterate response
-		// fmt.Println(result.Data5[0])
-
-		// TODO: insert into cassandra
-
-		// TODO: produce to kafka
 
 		// strange
 		offset++
