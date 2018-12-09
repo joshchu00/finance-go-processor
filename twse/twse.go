@@ -31,6 +31,7 @@ func Init() {
 }
 
 type response struct {
+	Stat  string `json:"stat"`
 	Data2 [][]string `json:"data2,omitempty"`
 	Data4 [][]string `json:"data4,omitempty"`
 	Data5 [][]string `json:"data5,omitempty"`
@@ -52,7 +53,9 @@ func Process(period string, ts int64, path string, isFinished bool, client *cass
 
 	var data [][]string
 
-	if len(res.Data5) != 0 && len(res.Data5[0]) == 16 {
+	if res.Stat != "OK" {
+		return
+	} else if len(res.Data5) != 0 && len(res.Data5[0]) == 16 {
 		data = res.Data5
 	} else if len(res.Data4) != 0 && len(res.Data4[0]) == 16 {
 		data = res.Data4
