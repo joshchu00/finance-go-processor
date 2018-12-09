@@ -31,7 +31,9 @@ func Init() {
 }
 
 type response struct {
-	Data5 [][]string `json:"data5"`
+	Data2 [][]string `json:"data2,omitempty"`
+	Data4 [][]string `json:"data4,omitempty"`
+	Data5 [][]string `json:"data5,omitempty"`
 }
 
 func Process(period string, ts int64, path string, isFinished bool, client *cassandra.Client, producer *kafka.Producer, topic string) (err error) {
@@ -48,7 +50,20 @@ func Process(period string, ts int64, path string, isFinished bool, client *cass
 		return
 	}
 
-	for _, record := range res.Data5 {
+	var data [][]string
+
+	if len(res.Data5) != 0 && len(res.Data5[0]) == 16 {
+		data = res.Data5
+	} else if len(res.Data4) != 0 && len(res.Data4[0]) == 16 {
+		data = res.Data4
+	} else if len(res.Data2) != 0 && len(res.Data2[0]) == 16 {
+		data = res.Data2
+	} else {
+		err = errors.New("Unknown data format")
+		return
+	}
+
+	for _, record := range data {
 
 		symbol := record[0]
 		name := record[1]
