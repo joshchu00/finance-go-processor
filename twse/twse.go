@@ -1,29 +1,42 @@
 package twse
 
 import (
+	"log"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
-	"log"
 	"strconv"
 	"strings"
 	"time"
+	"fmt"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/joshchu00/finance-go-common/cassandra"
 	"github.com/joshchu00/finance-go-common/decimal"
 	"github.com/joshchu00/finance-go-common/kafka"
+	"github.com/joshchu00/finance-go-common/logger"
+	"github.com/joshchu00/finance-go-common/datetime"
 	"github.com/joshchu00/finance-protobuf"
 	inf "gopkg.in/inf.v0"
 )
+
+var location *time.Location
+
+func Init() {
+	var err error
+	location, err = time.LoadLocation("Asia/Taipei")
+	if err != nil {
+		log.Fatalln("FATAL", "Get location error:", err)
+	}
+}
 
 type response struct {
 	Data5 [][]string `json:"data5"`
 }
 
-func Process(period string, t time.Time, path string, isFinished bool, client *cassandra.Client, producer *kafka.Producer, topic string) (err error) {
+func Process(period string, ts int64, path string, isFinished bool, client *cassandra.Client, producer *kafka.Producer, topic string) (err error) {
 
-	log.Println("INFO", "Starting twse process...", t.String())
+	logger.Info(fmt.Sprintf("%s: %s", "Starting twse process...", datetime.GetTimeString(ts, location)))
 
 	var bytes []byte
 	if bytes, err = ioutil.ReadFile(path); err != nil {
@@ -41,12 +54,12 @@ func Process(period string, t time.Time, path string, isFinished bool, client *c
 		name := record[1]
 
 		if record[5] == "--" && record[6] == "--" && record[7] == "--" && record[8] == "--" {
-			log.Println("INFO", "No record", record)
+			logger.Info(fmt.Sprintf("No record: %v", record))
 			continue
 		}
 
 		if record[5] == "--" || record[6] == "--" || record[7] == "--" || record[8] == "--" {
-			err = errors.New("No record")
+			err = errors.New(fmt.Sprintf("No record: %v", record))
 			return
 		}
 
@@ -83,7 +96,7 @@ func Process(period string, t time.Time, path string, isFinished bool, client *c
 			"TWSE",
 			symbol,
 			period,
-			t,
+			datetime.GetTime(ts, location),
 			name,
 			open,
 			high,

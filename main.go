@@ -1,13 +1,12 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"time"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/joshchu00/finance-go-common/cassandra"
 	"github.com/joshchu00/finance-go-common/config"
-	"github.com/joshchu00/finance-go-common/datetime"
 	"github.com/joshchu00/finance-go-common/kafka"
 	"github.com/joshchu00/finance-go-common/logger"
 	"github.com/joshchu00/finance-go-processor/twse"
@@ -23,12 +22,15 @@ func init() {
 	logger.Init(config.LogDirectory(), "processor")
 
 	// log config
-	log.Println("INFO", "Environment:", config.Environment())
-	log.Println("INFO", "CassandraHosts:", config.CassandraHosts())
-	log.Println("INFO", "CassandraKeyspace:", config.CassandraKeyspace())
-	log.Println("INFO", "KafkaBootstrapServers:", config.KafkaBootstrapServers())
-	log.Println("INFO", "KafkaProcessorTopic:", config.KafkaProcessorTopic())
-	log.Println("INFO", "KafkaAnalyzerTopic:", config.KafkaAnalyzerTopic())
+	logger.Info(fmt.Sprintf("%s: %s", "Environment", config.Environment()))
+	logger.Info(fmt.Sprintf("%s: %s", "CassandraHosts", config.CassandraHosts()))
+	logger.Info(fmt.Sprintf("%s: %s", "CassandraKeyspace", config.CassandraKeyspace()))
+	logger.Info(fmt.Sprintf("%s: %s", "KafkaBootstrapServers", config.KafkaBootstrapServers()))
+	logger.Info(fmt.Sprintf("%s: %s", "KafkaProcessorTopic", config.KafkaProcessorTopic()))
+	logger.Info(fmt.Sprintf("%s: %s", "KafkaAnalyzerTopic", config.KafkaAnalyzerTopic()))
+
+	// twse
+	twse.Init()
 }
 
 var environment string
@@ -38,7 +40,7 @@ func process() {
 	if environment == "prod" {
 		defer func() {
 			if err := recover(); err != nil {
-				log.Println("PANIC", "recover", err)
+				logger.Panic(fmt.Sprintf("recover %v", err))
 			}
 		}()
 	}
@@ -47,22 +49,25 @@ func process() {
 
 	// cassandra client
 	var cassandraClient *cassandra.Client
-	if cassandraClient, err = cassandra.NewClient(config.CassandraHosts(), config.CassandraKeyspace()); err != nil {
-		return
+	cassandraClient, err = cassandra.NewClient(config.CassandraHosts(), config.CassandraKeyspace())
+	if err != nil {
+		logger.Panic(fmt.Sprintf("cassandra.NewClient %v", err))
 	}
 	defer cassandraClient.Close()
 
 	// processor consumer
 	var processorConsumer *kafka.Consumer
-	if processorConsumer, err = kafka.NewConsumer(config.KafkaBootstrapServers(), "processor", config.KafkaProcessorTopic()); err != nil {
-		return
+	processorConsumer, err = kafka.NewConsumer(config.KafkaBootstrapServers(), "processor", config.KafkaProcessorTopic())
+	if err != nil {
+		logger.Panic(fmt.Sprintf("kafka.NewConsumer %v", err))
 	}
 	defer processorConsumer.Close()
 
 	// analyzer producer
 	var analyzerProducer *kafka.Producer
-	if analyzerProducer, err = kafka.NewProducer(config.KafkaBootstrapServers()); err != nil {
-		return
+	analyzerProducer, err = kafka.NewProducer(config.KafkaBootstrapServers())
+	if err != nil {
+		logger.Panic(fmt.Sprintf("kafka.NewProducer %v", err))
 	}
 	defer analyzerProducer.Close()
 
@@ -76,40 +81,40 @@ func process() {
 		var value []byte
 
 		if topic, partition, offset, value, err = processorConsumer.Consume(); err != nil {
-			log.Panicln("PANIC", "Consume", err)
+			logger.Panic(fmt.Sprintf("Consume %v", err))
 		}
 
 		if err = proto.Unmarshal(value, message); err != nil {
-			log.Panicln("PANIC", "Unmarshal", err)
+			logger.Panic(fmt.Sprintf("proto.Unmarshal %v", err))
 		}
 
 		switch message.Exchange {
 		case "TWSE":
-			if err = twse.Process(message.Period, datetime.GetTime(message.Datetime), message.Path, message.IsFinished, cassandraClient, analyzerProducer, config.KafkaAnalyzerTopic()); err != nil {
-				log.Panicln("PANIC", "Process", err)
+			if err = twse.Process(message.Period, message.Datetime, message.Path, message.IsFinished, cassandraClient, analyzerProducer, config.KafkaAnalyzerTopic()); err != nil {
+				logger.Panic(fmt.Sprintf("Process %v", err))
 			}
 		default:
-			log.Panicln("PANIC", "Unknown exchange")
+			logger.Panic("Unknown exchange")
 		}
 
 		// strange
 		offset++
 
 		if err = processorConsumer.CommitOffset(topic, partition, offset); err != nil {
-			log.Panicln(err)
+			logger.Panic(fmt.Sprintf("CommitOffset %v", err))
 		}
 	}
 }
 
 func main() {
 
-	log.Println("INFO", "Starting processor...")
+	logger.Info("Starting processor...")
 
 	// environment
 	environment = config.Environment()
 
 	if environment != "dev" && environment != "test" && environment != "stg" && environment != "prod" {
-		log.Panicln("PANIC", "Unknown environment")
+		logger.Panic("Unknown environment")
 	}
 
 	for {
