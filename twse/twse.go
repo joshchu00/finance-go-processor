@@ -1,21 +1,21 @@
 package twse
 
 import (
-	"log"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
+	"log"
 	"strconv"
 	"strings"
 	"time"
-	"fmt"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/joshchu00/finance-go-common/cassandra"
+	"github.com/joshchu00/finance-go-common/datetime"
 	"github.com/joshchu00/finance-go-common/decimal"
 	"github.com/joshchu00/finance-go-common/kafka"
 	"github.com/joshchu00/finance-go-common/logger"
-	"github.com/joshchu00/finance-go-common/datetime"
 	"github.com/joshchu00/finance-protobuf"
 	inf "gopkg.in/inf.v0"
 )
@@ -31,23 +31,25 @@ func Init() {
 }
 
 type response struct {
-	Stat  string `json:"stat"`
+	Stat  string     `json:"stat"`
 	Data2 [][]string `json:"data2,omitempty"`
 	Data4 [][]string `json:"data4,omitempty"`
 	Data5 [][]string `json:"data5,omitempty"`
 }
 
-func Process(period string, ts int64, path string, isFinished bool, client *cassandra.Client, producer *kafka.Producer, topic string) (err error) {
+func Process(period string, ts int64, path string, last bool, firstDatetime int64, client *cassandra.Client, producer *kafka.Producer, topic string) (err error) {
 
 	logger.Info(fmt.Sprintf("%s: %s", "Starting twse process...", datetime.GetTimeString(ts, location)))
 
 	var bytes []byte
-	if bytes, err = ioutil.ReadFile(path); err != nil {
+	bytes, err = ioutil.ReadFile(path)
+	if err != nil {
 		return
 	}
 
 	res := &response{}
-	if err = json.Unmarshal(bytes, res); err != nil {
+	err = json.Unmarshal(bytes, res)
+	if err != nil {
 		return
 	}
 
@@ -89,24 +91,29 @@ func Process(period string, ts int64, path string, isFinished bool, client *cass
 
 		var open, high, low, close *inf.Dec
 
-		if open, err = decimal.GetDecimal(record[5]); err != nil {
+		open, err = decimal.GetDecimal(record[5])
+		if err != nil {
 			return
 		}
 
-		if high, err = decimal.GetDecimal(record[6]); err != nil {
+		high, err = decimal.GetDecimal(record[6])
+		if err != nil {
 			return
 		}
 
-		if low, err = decimal.GetDecimal(record[7]); err != nil {
+		low, err = decimal.GetDecimal(record[7])
+		if err != nil {
 			return
 		}
 
-		if close, err = decimal.GetDecimal(record[8]); err != nil {
+		close, err = decimal.GetDecimal(record[8])
+		if err != nil {
 			return
 		}
 
 		var volume int64
-		if volume, err = strconv.ParseInt(record[4], 10, 64); err != nil {
+		volume, err = strconv.ParseInt(record[4], 10, 64)
+		if err != nil {
 			return
 		}
 
@@ -123,14 +130,16 @@ func Process(period string, ts int64, path string, isFinished bool, client *cass
 			volume,
 		)
 
-		if isFinished {
+		if last {
 			message := &protobuf.Analyzer{
 				Exchange: "TWSE",
 				Symbol:   symbol,
 				Period:   "1d",
+				Datetime: firstDatetime,
 			}
 
-			if bytes, err = proto.Marshal(message); err != nil {
+			bytes, err = proto.Marshal(message)
+			if err != nil {
 				return
 			}
 
