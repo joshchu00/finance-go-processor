@@ -16,7 +16,7 @@ import (
 	"github.com/joshchu00/finance-go-common/decimal"
 	"github.com/joshchu00/finance-go-common/kafka"
 	"github.com/joshchu00/finance-go-common/logger"
-	"github.com/joshchu00/finance-protobuf"
+	protobuf "github.com/joshchu00/finance-protobuf"
 	inf "gopkg.in/inf.v0"
 )
 
@@ -118,16 +118,18 @@ func Process(period string, ts int64, path string, last bool, firstDatetime int6
 		}
 
 		client.InsertRecord(
-			"TWSE",
-			symbol,
-			period,
-			datetime.GetTime(ts, location),
-			name,
-			open,
-			high,
-			low,
-			close,
-			volume,
+			&cassandra.Record{
+				"TWSE",
+				symbol,
+				period,
+				datetime.GetTime(ts, location),
+				name,
+				open,
+				high,
+				low,
+				close,
+				volume,
+			},
 		)
 
 		if last {
