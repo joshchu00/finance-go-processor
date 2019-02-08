@@ -1,3 +1,3 @@
-FROM joshchu00/golang-kafka:1.11-alpine
+FROM joshchu00/go-run-kafka:1.11.5-alpine
 Add main main
 CMD ./main
