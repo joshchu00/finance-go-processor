@@ -4,7 +4,7 @@ require (
 	github.com/coreos/etcd v3.3.11+incompatible // indirect
 	github.com/golang/protobuf v1.2.0
 	github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db // indirect
-	github.com/joshchu00/finance-go-common v0.1.1-0.20190210090047-2d5df5f0830d
+	github.com/joshchu00/finance-go-common v0.1.1-0.20190222130221-072679f70a95
 	github.com/joshchu00/finance-protobuf v0.1.1-0.20181216012137-9957535ab4d4
 	github.com/kr/pty v1.1.3 // indirect
 	github.com/spf13/afero v1.2.0 // indirect
