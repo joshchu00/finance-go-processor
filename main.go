@@ -23,6 +23,7 @@ func init() {
 
 	// log config
 	logger.Info(fmt.Sprintf("%s: %s", "EnvironmentName", config.EnvironmentName()))
+	logger.Info(fmt.Sprintf("%s: %s", "LogDirectory", config.LogDirectory()))
 	logger.Info(fmt.Sprintf("%s: %s", "CassandraHosts", config.CassandraHosts()))
 	logger.Info(fmt.Sprintf("%s: %s", "CassandraKeyspace", config.CassandraKeyspace()))
 	logger.Info(fmt.Sprintf("%s: %s", "KafkaBootstrapServers", config.KafkaBootstrapServers()))
