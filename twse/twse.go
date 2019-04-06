@@ -117,18 +117,22 @@ func Process(period string, ts int64, path string, last bool, firstDatetime int6
 			return
 		}
 
-		client.InsertRecord(
-			&cassandra.Record{
-				"TWSE",
-				symbol,
-				period,
-				datetime.GetTime(ts, location),
-				name,
-				open,
-				high,
-				low,
-				close,
-				volume,
+		client.InsertRecordRow(
+			&cassandra.RecordRow{
+				RecordPrimaryKey: cassandra.RecordPrimaryKey{
+					RecordPartitionKey: cassandra.RecordPartitionKey{
+						Exchange: "TWSE",
+						Symbol:   symbol,
+						Period:   period,
+					},
+					Datetime: datetime.GetTime(ts, location),
+				},
+				Name:   name,
+				Open:   open,
+				High:   high,
+				Low:    low,
+				Close:  close,
+				Volume: volume,
 			},
 		)
 
