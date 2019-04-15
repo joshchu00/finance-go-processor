@@ -10,7 +10,7 @@ import (
 	"github.com/joshchu00/finance-go-common/kafka"
 	"github.com/joshchu00/finance-go-common/logger"
 	"github.com/joshchu00/finance-go-processor/twse"
-	protobuf "github.com/joshchu00/finance-protobuf"
+	protobuf "github.com/joshchu00/finance-protobuf/inside"
 )
 
 func init() {

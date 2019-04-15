@@ -16,7 +16,7 @@ import (
 	"github.com/joshchu00/finance-go-common/decimal"
 	"github.com/joshchu00/finance-go-common/kafka"
 	"github.com/joshchu00/finance-go-common/logger"
-	protobuf "github.com/joshchu00/finance-protobuf"
+	protobuf "github.com/joshchu00/finance-protobuf/inside"
 	inf "gopkg.in/inf.v0"
 )
 
