@@ -90,6 +90,8 @@ func process() {
 			logger.Panic(fmt.Sprintf("proto.Unmarshal %v", err))
 		}
 
+		logger.Debug(fmt.Sprintf("%v", message))
+
 		switch message.Exchange {
 		case "TWSE":
 			err = twse.Process(
