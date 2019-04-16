@@ -24,14 +24,12 @@ func init() {
 	// log config
 	logger.Info(fmt.Sprintf("%s: %s", "EnvironmentName", config.EnvironmentName()))
 	logger.Info(fmt.Sprintf("%s: %s", "LogDirectory", config.LogDirectory()))
+	logger.Info(fmt.Sprintf("%s: %s", "DataDirectory", config.DataDirectory()))
 	logger.Info(fmt.Sprintf("%s: %s", "CassandraHosts", config.CassandraHosts()))
 	logger.Info(fmt.Sprintf("%s: %s", "CassandraKeyspace", config.CassandraKeyspace()))
 	logger.Info(fmt.Sprintf("%s: %s", "KafkaBootstrapServers", config.KafkaBootstrapServers()))
 	logger.Info(fmt.Sprintf("%s: %s", "KafkaProcessorTopic", config.KafkaProcessorTopic()))
 	logger.Info(fmt.Sprintf("%s: %s", "KafkaAnalyzerTopic", config.KafkaAnalyzerTopic()))
-
-	// twse
-	twse.Init()
 }
 
 var environmentName string
@@ -93,7 +91,7 @@ func process() {
 
 		switch message.Exchange {
 		case "TWSE":
-			err = twse.Process(message.Period, message.Datetime, message.Path, message.Last, message.FirstDatetime, cassandraClient, analyzerProducer, config.KafkaAnalyzerTopic())
+			err = twse.Process(message.Period, message.StartDatetime, message.EndDatetime, cassandraClient, analyzerProducer, config.KafkaAnalyzerTopic())
 			if err != nil {
 				logger.Panic(fmt.Sprintf("Process %v", err))
 			}
