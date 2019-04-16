@@ -45,16 +45,12 @@ func Process(
 		return
 	}
 
-	logger.Debug(fmt.Sprintf("%d %d %s", start, end, dataDirectory))
-
 	symbols := make(map[string]int64)
 
 	for ts := start; ts <= end; ts = datetime.AddOneDay(ts) {
 
 		dateString := datetime.GetDateString(ts, location)
 		path := data.GetPath(dataDirectory, dateString)
-
-		logger.Debug(path)
 
 		var bytes []byte
 		bytes, err = ioutil.ReadFile(path)
@@ -159,11 +155,7 @@ func Process(
 		}
 	}
 
-	logger.Debug(fmt.Sprintf("%d", len(symbols)))
-
 	for symbol, ts := range symbols {
-
-		logger.Debug(fmt.Sprintf("%s %d", symbol, ts))
 
 		message := &protobuf.Analyzer{
 			Exchange: "TWSE",
