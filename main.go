@@ -91,7 +91,15 @@ func process() {
 
 		switch message.Exchange {
 		case "TWSE":
-			err = twse.Process(message.Period, message.StartDatetime, message.EndDatetime, cassandraClient, analyzerProducer, config.KafkaAnalyzerTopic())
+			err = twse.Process(
+				message.Period,
+				message.StartDatetime,
+				message.EndDatetime,
+				config.DataDirectory(),
+				cassandraClient,
+				analyzerProducer,
+				config.KafkaAnalyzerTopic(),
+			)
 			if err != nil {
 				logger.Panic(fmt.Sprintf("Process %v", err))
 			}
