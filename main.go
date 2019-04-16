@@ -30,6 +30,7 @@ func init() {
 	logger.Info(fmt.Sprintf("%s: %s", "KafkaBootstrapServers", config.KafkaBootstrapServers()))
 	logger.Info(fmt.Sprintf("%s: %s", "KafkaProcessorTopic", config.KafkaProcessorTopic()))
 	logger.Info(fmt.Sprintf("%s: %s", "KafkaAnalyzerTopic", config.KafkaAnalyzerTopic()))
+	logger.Info(fmt.Sprintf("%s: %s", "TWSEDataDirectory", config.TWSEDataDirectory()))
 }
 
 var environmentName string
@@ -88,6 +89,8 @@ func process() {
 		if err != nil {
 			logger.Panic(fmt.Sprintf("proto.Unmarshal %v", err))
 		}
+
+		logger.Debug(fmt.Sprintf("%v", message))
 
 		switch message.Exchange {
 		case "TWSE":
