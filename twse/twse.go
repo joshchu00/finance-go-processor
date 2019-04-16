@@ -71,7 +71,7 @@ func Process(
 		var records [][]string
 
 		if res.Stat != "OK" {
-			return
+			continue
 		} else if len(res.Data5) != 0 && len(res.Data5[0]) == 16 {
 			records = res.Data5
 		} else if len(res.Data4) != 0 && len(res.Data4[0]) == 16 {
