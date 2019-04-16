@@ -4,7 +4,7 @@ require (
 	github.com/golang/protobuf v1.2.0
 	github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db // indirect
 	github.com/joshchu00/finance-go-common v0.1.1-0.20190416135245-b0770b874d76
-	github.com/joshchu00/finance-protobuf v0.1.1-0.20190416051247-4a3186d67741
+	github.com/joshchu00/finance-protobuf v0.1.1-0.20190416160335-0bc74a6adc5f
 	github.com/spf13/afero v1.2.0 // indirect
 	github.com/spf13/viper v1.3.1 // indirect
 	github.com/stretchr/testify v1.3.0 // indirect

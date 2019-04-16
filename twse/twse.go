@@ -171,7 +171,10 @@ func Process(
 			return
 		}
 
-		producer.Produce(topic, 0, bytes)
+		err = producer.Produce(topic, 0, bytes)
+		if err != nil {
+			return
+		}
 	}
 
 	return
