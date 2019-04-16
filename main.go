@@ -95,7 +95,7 @@ func process() {
 				message.Period,
 				message.StartDatetime,
 				message.EndDatetime,
-				config.DataDirectory(),
+				config.TWSEDataDirectory(),
 				cassandraClient,
 				analyzerProducer,
 				config.KafkaAnalyzerTopic(),
