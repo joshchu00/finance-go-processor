@@ -155,7 +155,11 @@ func Process(
 		}
 	}
 
+	logger.Debug(fmt.Sprintf("%d", len(symbols)))
+
 	for symbol, ts := range symbols {
+
+		logger.Debug(fmt.Sprintf("%s %d", symbol, ts))
 
 		message := &protobuf.Analyzer{
 			Exchange: "TWSE",
