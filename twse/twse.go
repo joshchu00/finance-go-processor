@@ -27,6 +27,117 @@ type response struct {
 	Data5 [][]string `json:"data5,omitempty"`
 }
 
+func process(ts int64, location *time.Location, dataDirectory string, period string, client *cassandra.Client, symbols map[string]int64) (err error) {
+
+	logger.Info(fmt.Sprintf("%s: %d", "Starting twse.process...", ts))
+
+	dateString := datetime.GetDateString(ts, location)
+
+	var bytes []byte
+	bytes, err = ioutil.ReadFile(data.GetPath(dataDirectory, dateString))
+	if err != nil {
+		return
+	}
+
+	res := &response{}
+	err = json.Unmarshal(bytes, res)
+	if err != nil {
+		return
+	}
+
+	var records [][]string
+
+	if res.Stat != "OK" {
+		return
+	} else if len(res.Data5) != 0 && len(res.Data5[0]) == 16 {
+		records = res.Data5
+	} else if len(res.Data4) != 0 && len(res.Data4[0]) == 16 {
+		records = res.Data4
+	} else if len(res.Data2) != 0 && len(res.Data2[0]) == 16 {
+		records = res.Data2
+	} else {
+		err = errors.New("Unknown data format")
+		return
+	}
+
+	for _, record := range records {
+
+		symbol := record[0]
+		name := record[1]
+
+		if record[5] == "--" && record[6] == "--" && record[7] == "--" && record[8] == "--" {
+			logger.Info(fmt.Sprintf("No record: %v", record))
+			continue
+		}
+
+		if record[5] == "--" || record[6] == "--" || record[7] == "--" || record[8] == "--" {
+			err = errors.New(fmt.Sprintf("No record: %v", record))
+			return
+		}
+
+		var ok bool
+		_, ok = symbols[symbol]
+		if !ok {
+			symbols[symbol] = ts
+		}
+
+		record[4] = strings.Replace(record[4], ",", "", -1)
+		record[5] = strings.Replace(record[5], ",", "", -1)
+		record[6] = strings.Replace(record[6], ",", "", -1)
+		record[7] = strings.Replace(record[7], ",", "", -1)
+		record[8] = strings.Replace(record[8], ",", "", -1)
+
+		var open, high, low, close *inf.Dec
+
+		open, err = decimal.GetDecimal(record[5])
+		if err != nil {
+			return
+		}
+
+		high, err = decimal.GetDecimal(record[6])
+		if err != nil {
+			return
+		}
+
+		low, err = decimal.GetDecimal(record[7])
+		if err != nil {
+			return
+		}
+
+		close, err = decimal.GetDecimal(record[8])
+		if err != nil {
+			return
+		}
+
+		var volume int64
+		volume, err = strconv.ParseInt(record[4], 10, 64)
+		if err != nil {
+			return
+		}
+
+		client.InsertRecordRow(
+			&cassandra.RecordRow{
+				RecordPrimaryKey: cassandra.RecordPrimaryKey{
+					RecordPartitionKey: cassandra.RecordPartitionKey{
+						Exchange: "TWSE",
+						Symbol:   symbol,
+						Period:   period,
+					},
+					Datetime: datetime.GetTime(ts, location),
+				},
+				Name:   name,
+				Open:   open,
+				High:   high,
+				Low:    low,
+				Close:  close,
+				Volume: volume,
+			},
+		)
+	}
+
+	return
+}
+
 func Process(
 	period string,
 	start int64,
@@ -37,7 +148,7 @@ func Process(
 	topic string,
 ) (err error) {
 
-	logger.Info("Starting twse process...")
+	logger.Info("Starting twse.Process...")
 
 	var location *time.Location
 	location, err = time.LoadLocation("Asia/Taipei")
@@ -49,109 +160,16 @@ func Process(
 
 	for ts := start; ts <= end; ts = datetime.AddOneDay(ts) {
 
-		dateString := datetime.GetDateString(ts, location)
-		path := data.GetPath(dataDirectory, dateString)
-
-		var bytes []byte
-		bytes, err = ioutil.ReadFile(path)
+		err = process(
+			ts,
+			location,
+			dataDirectory,
+			period,
+			client,
+			symbols,
+		)
 		if err != nil {
 			return
-		}
-
-		res := &response{}
-		err = json.Unmarshal(bytes, res)
-		if err != nil {
-			return
-		}
-
-		var records [][]string
-
-		if res.Stat != "OK" {
-			continue
-		} else if len(res.Data5) != 0 && len(res.Data5[0]) == 16 {
-			records = res.Data5
-		} else if len(res.Data4) != 0 && len(res.Data4[0]) == 16 {
-			records = res.Data4
-		} else if len(res.Data2) != 0 && len(res.Data2[0]) == 16 {
-			records = res.Data2
-		} else {
-			err = errors.New("Unknown data format")
-			return
-		}
-
-		for _, record := range records {
-
-			symbol := record[0]
-			name := record[1]
-
-			if record[5] == "--" && record[6] == "--" && record[7] == "--" && record[8] == "--" {
-				logger.Info(fmt.Sprintf("No record: %v", record))
-				continue
-			}
-
-			if record[5] == "--" || record[6] == "--" || record[7] == "--" || record[8] == "--" {
-				err = errors.New(fmt.Sprintf("No record: %v", record))
-				return
-			}
-
-			var ok bool
-			_, ok = symbols[symbol]
-			if !ok {
-				symbols[symbol] = ts
-			}
-
-			record[4] = strings.Replace(record[4], ",", "", -1)
-			record[5] = strings.Replace(record[5], ",", "", -1)
-			record[6] = strings.Replace(record[6], ",", "", -1)
-			record[7] = strings.Replace(record[7], ",", "", -1)
-			record[8] = strings.Replace(record[8], ",", "", -1)
-
-			var open, high, low, close *inf.Dec
-
-			open, err = decimal.GetDecimal(record[5])
-			if err != nil {
-				return
-			}
-
-			high, err = decimal.GetDecimal(record[6])
-			if err != nil {
-				return
-			}
-
-			low, err = decimal.GetDecimal(record[7])
-			if err != nil {
-				return
-			}
-
-			close, err = decimal.GetDecimal(record[8])
-			if err != nil {
-				return
-			}
-
-			var volume int64
-			volume, err = strconv.ParseInt(record[4], 10, 64)
-			if err != nil {
-				return
-			}
-
-			client.InsertRecordRow(
-				&cassandra.RecordRow{
-					RecordPrimaryKey: cassandra.RecordPrimaryKey{
-						RecordPartitionKey: cassandra.RecordPartitionKey{
-							Exchange: "TWSE",
-							Symbol:   symbol,
-							Period:   period,
-						},
-						Datetime: datetime.GetTime(ts, location),
-					},
-					Name:   name,
-					Open:   open,
-					High:   high,
-					Low:    low,
-					Close:  close,
-					Volume: volume,
-				},
-			)
 		}
 	}
 
