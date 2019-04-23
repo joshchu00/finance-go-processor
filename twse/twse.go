@@ -115,6 +115,8 @@ func process(ts int64, location *time.Location, dataDirectory string, period str
 			return
 		}
 
+		at := datetime.GetTime(ts, location)
+
 		client.InsertRecordRow(
 			&cassandra.RecordRow{
 				RecordPrimaryKey: cassandra.RecordPrimaryKey{
@@ -123,7 +125,7 @@ func process(ts int64, location *time.Location, dataDirectory string, period str
 						Symbol:   symbol,
 						Period:   period,
 					},
-					Datetime: datetime.GetTime(ts, location),
+					Datetime: at,
 				},
 				Name:   name,
 				Open:   open,
@@ -132,6 +134,30 @@ func process(ts int64, location *time.Location, dataDirectory string, period str
 				Close:  close,
 				Volume: volume,
 			},
+		)
+
+		client.InsertIndicatorRowName(
+			&cassandra.IndicatorPrimaryKey{
+				IndicatorPartitionKey: cassandra.IndicatorPartitionKey{
+					Exchange: "TWSE",
+					Symbol:   symbol,
+					Period:   period,
+				},
+				Datetime: at,
+			},
+			name,
+		)
+
+		client.InsertStrategyRowName(
+			&cassandra.StrategyPrimaryKey{
+				StrategyPartitionKey: cassandra.StrategyPartitionKey{
+					Exchange: "TWSE",
+					Symbol:   symbol,
+					Period:   period,
+				},
+				Datetime: at,
+			},
+			name,
 		)
 	}
 

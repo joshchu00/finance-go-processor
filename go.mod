@@ -1,15 +1,17 @@
 module github.com/joshchu00/finance-go-processor
 
 require (
-	github.com/golang/protobuf v1.2.0
-	github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db // indirect
-	github.com/joshchu00/finance-go-common v0.1.1-0.20190416135245-b0770b874d76
-	github.com/joshchu00/finance-protobuf v0.1.1-0.20190416160335-0bc74a6adc5f
-	github.com/spf13/afero v1.2.0 // indirect
-	github.com/spf13/viper v1.3.1 // indirect
+	github.com/gocql/gocql v0.0.0-20190423091413-b99afaf3b163 // indirect
+	github.com/golang/protobuf v1.3.1
+	github.com/golang/snappy v0.0.1 // indirect
+	github.com/joshchu00/finance-go-common v0.1.1-0.20190423133202-6d4c09dcebf3
+	github.com/joshchu00/finance-protobuf v0.1.1-0.20190423120400-a87280d79f66
+	github.com/pelletier/go-toml v1.3.0 // indirect
+	github.com/spf13/afero v1.2.2 // indirect
+	github.com/spf13/jwalterweatherman v1.1.0 // indirect
+	github.com/spf13/viper v1.3.2 // indirect
 	github.com/stretchr/testify v1.3.0 // indirect
-	golang.org/x/sync v0.0.0-20181108010431-42b317875d0f // indirect
-	golang.org/x/sys v0.0.0-20190121090251-770c60269bf0 // indirect
+	golang.org/x/sys v0.0.0-20190422165155-953cdadca894 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/inf.v0 v0.9.1
 )
