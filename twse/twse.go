@@ -25,6 +25,7 @@ type response struct {
 	Data2 [][]string `json:"data2,omitempty"`
 	Data4 [][]string `json:"data4,omitempty"`
 	Data5 [][]string `json:"data5,omitempty"`
+	Data9 [][]string `json:"data9,omitempty"`
 }
 
 func process(ts int64, location *time.Location, dataDirectory string, period string, client *cassandra.Client, symbols map[string]int64) (err error) {
@@ -49,6 +50,8 @@ func process(ts int64, location *time.Location, dataDirectory string, period str
 
 	if res.Stat != "OK" {
 		return
+	} else if len(res.Data9) != 0 && len(res.Data9[0]) == 16 {
+		records = res.Data9
 	} else if len(res.Data5) != 0 && len(res.Data5[0]) == 16 {
 		records = res.Data5
 	} else if len(res.Data4) != 0 && len(res.Data4[0]) == 16 {
